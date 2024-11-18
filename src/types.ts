@@ -102,8 +102,8 @@ export type Reliquary = {
   }
 }
 
-// Analytics
-export type AnalyticsAvatar = {
+// Statistics
+export type StatisticsAvatar = {
   avatarId: number
   count: number
   // 旅人の元素
@@ -140,7 +140,7 @@ export type AnalyticsAvatar = {
   }[]
 }
 /*
-export type AnalyticsPlayer = {
+export type StatisticsPlayer = {
   count: number
   level: number[]
   finishAchievementNum: number[]
@@ -150,7 +150,7 @@ export type AnalyticsPlayer = {
   theaterActIndex: number[]
 }
 
-export type AnalyticsData = {
+export type Statistics = {
   playerInfo: AnalyticsPlayer
   avatarInfoList: AnalyticsAvatar[]
   timestamp: number

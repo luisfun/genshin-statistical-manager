@@ -1,4 +1,4 @@
-import type { AnalyticsAvatar, AvatarInfo, PlayerInfo, Weapon } from './types'
+import type { AvatarInfo, PlayerInfo, StatisticsAvatar, Weapon } from './types'
 import { mean, mean2, median, median2, mode2 } from './utils'
 
 const KEY = 'statistics'
@@ -54,7 +54,7 @@ export const statistics = async (db: D1Database) => {
     .map(e => e[0])
     .filter(e => /^_\d/.test(e))
     .sort((a, b) => Number(b.slice(1)) - Number(a.slice(1)))
-  const avatarInfoList: AnalyticsAvatar[] = []
+  const avatarInfoList: StatisticsAvatar[] = []
   for (const id of avatar_ids) {
     const avatarInfoData = (await db.prepare(`SELECT data FROM ${id}`).raw<string[]>()).map(
       e => JSON.parse(e[0]) as AvatarInfo,
@@ -170,7 +170,7 @@ export const statistics = async (db: D1Database) => {
     asArr.sort((a, b) => b.count - a.count)
     if (wpArr.length > AVATAR_NUM_LIMIT) wpArr.length = AVATAR_NUM_LIMIT
     if (asArr.length > AVATAR_NUM_LIMIT) asArr.length = AVATAR_NUM_LIMIT
-    const avatarInfo: AnalyticsAvatar = {
+    const avatarInfo: StatisticsAvatar = {
       avatarId: Number(id.replace('_', '')),
       count: avatarInfoData.length,
       consts: coArr,
