@@ -1,18 +1,28 @@
-import type { AvatarInfo, PlayerInfo, StatisticsAvatar, Weapon } from './types'
+import type { AvatarInfo, PlayerInfo, Statistics, StatisticsAvatar, StatisticsPlayer, Weapon } from './types'
 import { mean, mean2, median, median2, mode2 } from './utils'
 
 const KEY = 'statistics'
 const AVATAR_STAT_LIMIT = 3 // 10
 const AVATAR_NUM_LIMIT = 5
+const AVATAR_PROCESS_LIMIT = 10
 
-export const statistics = async (db: D1Database) => {
-  //playerInfo
+type DBKVResult = { key: string; value: string; updated_at: number }
+const QUERY_GET_TABLE = 'SELECT name FROM sqlite_master WHERE type="table"'
+const QUERY_SET_KV = 'REPLACE INTO key_value (key, updated_at, value) VALUES(?, ?, ?)'
+const putDBKV = (db: D1Database, key: string, timestamp: number, value: string) =>
+  db.prepare(QUERY_SET_KV).bind(key, timestamp, value).all<undefined>()
+
+/**
+ * playerInfo
+ * @param {D1Database} db
+ */
+export const statisticsPlayer = async (db: D1Database) => {
   const lvArr: number[] = [] // レベル
   const acArr: number[] = [] // アチーブメント
   const acArr100: number[] = [] // アチーブメント/100
   const tfArr: number[] = [] // 螺旋n階
   const taArr: number[] = [] // 幻想シアター階層
-  const playerInfoData = (await db.prepare('SELECT data FROM player').raw<string[]>()).map(
+  const playerInfoData = (await db.prepare('SELECT data FROM player').raw<[string]>()).map(
     e => JSON.parse(e[0]) as PlayerInfo,
   )
   // カウント
@@ -39,7 +49,7 @@ export const statistics = async (db: D1Database) => {
   }
   for (let i = 0; i < tfArr.length; i++) tfArr[i] = tfArr[i] ?? 0
   for (let i = 0; i < taArr.length; i++) taArr[i] = taArr[i] ?? 0
-  const playerInfo = {
+  const playerInfo: StatisticsPlayer = {
     count: playerInfoData.length,
     level: lvArr,
     finishAchievementNum: acArr,
@@ -49,14 +59,34 @@ export const statistics = async (db: D1Database) => {
     theaterActIndex: taArr,
   }
 
-  //avatarInfo
-  const avatar_ids = (await db.prepare('SELECT name FROM sqlite_master WHERE type="table"').raw<string[]>())
+  // save
+  await putDBKV(db, `${KEY}_player`, Date.now(), JSON.stringify(playerInfo))
+}
+
+/**
+ * avatarInfo
+ * @param {D1Database} db
+ */
+export const statisticsAvatar = async (db: D1Database) => {
+  // ソースID
+  const tableIds = (await db.prepare(QUERY_GET_TABLE).raw<[string]>())
     .map(e => e[0])
     .filter(e => /^_\d/.test(e))
     .sort((a, b) => Number(b.slice(1)) - Number(a.slice(1)))
-  const avatarInfoList: StatisticsAvatar[] = []
-  for (const id of avatar_ids) {
-    const avatarInfoData = (await db.prepare(`SELECT data FROM ${id}`).raw<string[]>()).map(
+  // 統計済みID
+  const statList = (await db.prepare('SELECT key FROM key_value ORDER BY updated_at ASC').raw<[string]>())
+    .map(e => e[0])
+    .filter(e => tableIds.includes(e.match(/_\d+/)?.[0] ?? ''))
+  // 未登録ID ＋ 古い順ID
+  const avatarIds = [
+    ...tableIds.filter(id => statList.findIndex(s => s === KEY + id) === -1),
+    ...(statList.map(s => s.match(/_\d+/)?.[0] ?? undefined).filter(e => e) as string[]),
+  ]
+  if (avatarIds.length > AVATAR_PROCESS_LIMIT) avatarIds.length = AVATAR_PROCESS_LIMIT
+
+  // 実際の処理
+  for (const id of avatarIds) {
+    const avatarInfoData = (await db.prepare(`SELECT data FROM ${id}`).raw<[string]>()).map(
       e => JSON.parse(e[0]) as AvatarInfo,
     )
     if (avatarInfoData.length < AVATAR_STAT_LIMIT) continue
@@ -197,26 +227,26 @@ export const statistics = async (db: D1Database) => {
     } else {
       avatarInfo.travelerElement = travelerElem
     }
-    avatarInfoList.push(avatarInfo)
+
+    // save
+    await putDBKV(db, KEY + id, Date.now(), JSON.stringify(avatarInfo))
   }
 
-  // save
-  const timestamp = Date.now()
-  await putDBKV(
-    db,
-    KEY,
-    timestamp,
-    JSON.stringify({
-      playerInfo,
-      avatarInfoList,
-      timestamp,
-    }),
+  // 統計データをまとめる
+  const statData = (await db.prepare('SELECT key, value FROM key_value').raw<[string, string]>()).filter(e =>
+    e[0].startsWith(`${KEY}_`),
   )
-  /*
-  const getAna = JSON.parse(await kv.get(KEY_ANALYTICS) || ``)
-  console.log(getAna.playerInfo.achievementTop)
-  console.log(getAna.avatarInfoList[0])
-  */
+  const playerInfoRaw = statData.find(e => e[0] === `${KEY}_player`)?.[1]
+  if (!playerInfoRaw) {
+    new Error('playerInfo is missing')
+    return
+  }
+  const playerInfo = JSON.parse(playerInfoRaw) as StatisticsPlayer
+  const avatarInfoList = statData.filter(e => e[0].match(/_\d+/)).map(e => JSON.parse(e[1]) as StatisticsAvatar)
+  const timestamp = Date.now()
+  const stats: Statistics = { playerInfo, avatarInfoList, timestamp }
+  // save
+  await putDBKV(db, KEY, timestamp, JSON.stringify(stats))
 }
 
 // api のほぼコピペ
@@ -250,7 +280,3 @@ const get_reliquary_sets = (avatarInfo: AvatarInfo) => {
   }
   return reList.sort((a, b) => a.id - b.id)
 }
-
-const QUERY_SET_KV = 'REPLACE INTO key_value (key, updated_at, value) VALUES(?, ?, ?)'
-const putDBKV = (db: D1Database, key: string, timestamp: number, value: string) =>
-  db.prepare(QUERY_SET_KV).bind(key, timestamp, value).all<undefined>()

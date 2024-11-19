@@ -139,7 +139,7 @@ export type StatisticsAvatar = {
     count: number
   }[]
 }
-/*
+
 export type StatisticsPlayer = {
   count: number
   level: number[]
@@ -151,8 +151,7 @@ export type StatisticsPlayer = {
 }
 
 export type Statistics = {
-  playerInfo: AnalyticsPlayer
-  avatarInfoList: AnalyticsAvatar[]
+  playerInfo: StatisticsPlayer
+  avatarInfoList: StatisticsAvatar[]
   timestamp: number
 }
-*/
