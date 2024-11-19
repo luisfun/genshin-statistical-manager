@@ -22,8 +22,7 @@ export default {
         await statisticsAvatar(env.db)
         break
       default:
-        new Error('Unknown scheduled Trigger')
-        break
+        throw new Error('Unknown scheduled Trigger')
     }
   },
 } satisfies ExportedHandler<Env>

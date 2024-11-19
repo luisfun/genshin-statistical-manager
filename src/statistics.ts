@@ -237,10 +237,7 @@ export const statisticsAvatar = async (db: D1Database) => {
     e[0].startsWith(`${KEY}_`),
   )
   const playerInfoRaw = statData.find(e => e[0] === `${KEY}_player`)?.[1]
-  if (!playerInfoRaw) {
-    new Error('playerInfo is missing')
-    return
-  }
+  if (!playerInfoRaw) throw new Error('playerInfo is missing')
   const playerInfo = JSON.parse(playerInfoRaw) as StatisticsPlayer
   const avatarInfoList = statData.filter(e => e[0].match(/_\d+/)).map(e => JSON.parse(e[1]) as StatisticsAvatar)
   const timestamp = Date.now()
