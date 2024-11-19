@@ -8,18 +8,20 @@ export const d1Limiter = async (db: D1Database, player: number, num: number, day
       .bind(player)
       .first<number>('updated_at')) || limit_at
   // avatarのテーブルリスト取得（IDの取得）
-  const avatar_ids = (await db.prepare('SELECT name FROM sqlite_master WHERE type="table"').raw<string[]>())
+  const avatar_ids = (await db.prepare('SELECT name FROM sqlite_master WHERE type="table"').raw<[string]>())
     .map(e => e[0])
     .filter(e => /^_\d/.test(e))
   if (!avatar_ids[0]) return // error
   // avatarの数取得
-  const avatar_counts = (await db.batch([...avatar_ids.map(e => db.prepare(`SELECT count(*) FROM ${e}`))])).map(
-    e => (e.results[0] as { 'count(*)': number })['count(*)'],
-  )
+  const avatar_counts = (
+    await db.batch<{ 'count(*)': number }>([...avatar_ids.map(e => db.prepare(`SELECT count(*) FROM ${e}`))])
+  ).map(e => e.results[0]['count(*)'])
   // avatarのupdated_at取得
   const avatar_updated_at = (
-    await db.batch([...avatar_ids.map(e => db.prepare(`SELECT updated_at FROM ${e} ORDER BY updated_at LIMIT 1`))])
-  ).map(e => (e.results[0] as { updated_at: number } | undefined)?.updated_at)
+    await db.batch<{ updated_at: number } | undefined>([
+      ...avatar_ids.map(e => db.prepare(`SELECT updated_at FROM ${e} ORDER BY updated_at LIMIT 1`)),
+    ])
+  ).map(e => e.results[0]?.updated_at)
   // avatarのupdated_at閾値
   const avatar_limit_at = avatar_ids.map((_, i) =>
     calcTime(now_at, limit_at, num, avatar_updated_at[i], avatar_counts[i]),
