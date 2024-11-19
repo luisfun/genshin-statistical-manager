@@ -14,11 +14,11 @@ export default {
   },
   async scheduled(controller, env, ctx) {
     switch (controller.cron) {
-      case '0 1,9,17 * * *':
+      case '0 */8 * * *':
         await d1Limiter(env.db, env.PLAYER_LIMIT, env.CHARACTER_LIMIT, env.DAY_LIMIT)
         await statisticsPlayer(env.db)
         break
-      case '0 0,2-8,10-16,18-23 * * *':
+      case '0 1-7,9-15,17-23 * * *':
         await statisticsAvatar(env.db)
         break
       default:
