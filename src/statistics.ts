@@ -20,6 +20,7 @@ export const statisticsPlayer = async (db: D1Database) => {
   const lvArr: number[] = [] // レベル
   const acArr: number[] = [] // アチーブメント
   const acArr100: number[] = [] // アチーブメント/100
+  const fsArr: number[] = [] // 好感度最大数
   const tfArr: number[] = [] // 螺旋n階
   const taArr: number[] = [] // 幻想シアター階層
   const playerInfoData = (await db.prepare('SELECT data FROM player').raw<[string]>()).map(
@@ -29,14 +30,17 @@ export const statisticsPlayer = async (db: D1Database) => {
   for (const p of playerInfoData) {
     const lvIndex = p.level ?? 0
     const acIndex = p.finishAchievementNum ?? 0
+    const fsIndex = p.fetterCount ?? 0
     const tfIndex = p.towerFloorIndex ?? 0
     const taIndex = p.theaterActIndex ?? 0
     if (!lvArr[lvIndex]) lvArr[lvIndex] = 0
     if (!acArr[acIndex]) acArr[acIndex] = 0
+    if (!fsArr[fsIndex]) fsArr[fsIndex] = 0
     if (!tfArr[tfIndex]) tfArr[tfIndex] = 0
     if (!taArr[taIndex]) taArr[taIndex] = 0
     lvArr[lvIndex]++
     acArr[acIndex]++
+    fsArr[fsIndex]++
     tfArr[tfIndex]++
     taArr[taIndex]++
   }
@@ -47,6 +51,7 @@ export const statisticsPlayer = async (db: D1Database) => {
     if (i % 100 === 0) acArr100[Math.floor(i / 100)] = 0
     acArr100[Math.floor(i / 100)] += acArr[i]
   }
+  for (let i = 0; i < fsArr.length; i++) fsArr[i] = fsArr[i] ?? 0
   for (let i = 0; i < tfArr.length; i++) tfArr[i] = tfArr[i] ?? 0
   for (let i = 0; i < taArr.length; i++) taArr[i] = taArr[i] ?? 0
   const playerInfo: StatisticsPlayer = {
@@ -55,6 +60,7 @@ export const statisticsPlayer = async (db: D1Database) => {
     finishAchievementNum: acArr,
     finishAchievementNum100: acArr100,
     finishAchievementNumTop: acArr.length - 1,
+    fetterCount: fsArr,
     towerFloorIndex: tfArr,
     theaterActIndex: taArr,
   }
