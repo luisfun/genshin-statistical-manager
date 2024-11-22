@@ -1,16 +1,16 @@
 import type { AvatarInfo, PlayerInfo, Statistics, StatisticsAvatar, StatisticsPlayer, Weapon } from './types'
 import { mean, mean2, median, median2, mode2 } from './utils'
 
-const KEY = 'statistics'
-const AVATAR_STAT_LIMIT = 3 // 10
+const AVATAR_STAT_LIMIT = 1 // 10
 const AVATAR_NUM_LIMIT = 5
 const AVATAR_PROCESS_LIMIT = 10
 
-type DBKVResult = { key: string; value: string; updated_at: number }
-const QUERY_GET_TABLE = 'SELECT name FROM sqlite_master WHERE type="table"'
-const QUERY_SET_KV = 'REPLACE INTO key_value (key, updated_at, value) VALUES(?, ?, ?)'
-const putDBKV = (db: D1Database, key: string, timestamp: number, value: string) =>
-  db.prepare(QUERY_SET_KV).bind(key, timestamp, value).all<undefined>()
+const TABLE = 'statistics'
+const PLAYER_UID = 10
+const COMP_UID = 1
+
+const setStat = (db: D1Database, uid: number, updated_at: number, data: string) =>
+  db.prepare(`REPLACE INTO ${TABLE} (uid, updated_at, data) VALUES(?, ?, ?)`).bind(uid, updated_at, data).all()
 
 /**
  * playerInfo
@@ -66,7 +66,7 @@ export const statisticsPlayer = async (db: D1Database) => {
   }
 
   // save
-  await putDBKV(db, `${KEY}_player`, Date.now(), JSON.stringify(playerInfo))
+  await setStat(db, PLAYER_UID, Date.now(), JSON.stringify(playerInfo))
 }
 
 /**
@@ -75,19 +75,16 @@ export const statisticsPlayer = async (db: D1Database) => {
  */
 export const statisticsAvatar = async (db: D1Database) => {
   // ソースID
-  const tableIds = (await db.prepare(QUERY_GET_TABLE).raw<[string]>())
+  const tableIds = (await db.prepare('SELECT name FROM sqlite_master WHERE type="table"').raw<[string]>())
     .map(e => e[0])
     .filter(e => /^_\d/.test(e))
     .sort((a, b) => Number(b.slice(1)) - Number(a.slice(1)))
   // 統計済みID
-  const statList = (await db.prepare('SELECT key FROM key_value ORDER BY updated_at ASC').raw<[string]>())
-    .map(e => e[0])
-    .filter(e => tableIds.includes(e.match(/_\d+/)?.[0] ?? ''))
+  const statList = (await db.prepare(`SELECT uid FROM ${TABLE} ORDER BY updated_at ASC`).raw<[number]>())
+    .filter(e => 1000 < e[0])
+    .map(e => `_${e[0]}`)
   // 未登録ID ＋ 古い順ID
-  const avatarIds = [
-    ...tableIds.filter(id => statList.findIndex(s => s === KEY + id) === -1),
-    ...(statList.map(s => s.match(/_\d+/)?.[0] ?? undefined).filter(e => e) as string[]),
-  ]
+  const avatarIds = [...tableIds.filter(id => statList.findIndex(s => s === id) === -1), ...statList]
   if (avatarIds.length > AVATAR_PROCESS_LIMIT) avatarIds.length = AVATAR_PROCESS_LIMIT
 
   // 実際の処理
@@ -235,21 +232,19 @@ export const statisticsAvatar = async (db: D1Database) => {
     }
 
     // save
-    await putDBKV(db, KEY + id, Date.now(), JSON.stringify(avatarInfo))
+    await setStat(db, avatarInfo.avatarId, Date.now(), JSON.stringify(avatarInfo))
   }
 
   // 統計データをまとめる
-  const statData = (await db.prepare('SELECT key, value FROM key_value').raw<[string, string]>()).filter(e =>
-    e[0].startsWith(`${KEY}_`),
-  )
-  const playerInfoRaw = statData.find(e => e[0] === `${KEY}_player`)?.[1]
+  const statData = await db.prepare(`SELECT uid, data FROM ${TABLE}`).raw<[number, string]>()
+  const playerInfoRaw = statData.find(e => e[0] === PLAYER_UID)?.[1]
   if (!playerInfoRaw) throw new Error('playerInfo is missing')
   const playerInfo = JSON.parse(playerInfoRaw) as StatisticsPlayer
-  const avatarInfoList = statData.filter(e => e[0].match(/_\d+/)).map(e => JSON.parse(e[1]) as StatisticsAvatar)
+  const avatarInfoList = statData.filter(e => 1000 < e[0]).map(e => JSON.parse(e[1]) as StatisticsAvatar)
   const timestamp = Date.now()
   const stats: Statistics = { playerInfo, avatarInfoList, timestamp }
   // save
-  await putDBKV(db, KEY, timestamp, JSON.stringify(stats))
+  await setStat(db, COMP_UID, timestamp, JSON.stringify(stats))
 }
 
 // api のほぼコピペ
