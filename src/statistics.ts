@@ -236,7 +236,7 @@ export const statisticsAvatar = async (db: D1Database) => {
   }
 
   // 統計データをまとめる
-  const statData = await db.prepare(`SELECT uid, data FROM ${TABLE}`).raw<[number, string]>()
+  const statData = await db.prepare(`SELECT uid, data FROM ${TABLE} ORDER BY uid DESC`).raw<[number, string]>()
   const playerInfoRaw = statData.find(e => e[0] === PLAYER_UID)?.[1]
   if (!playerInfoRaw) throw new Error('playerInfo is missing')
   const playerInfo = JSON.parse(playerInfoRaw) as StatisticsPlayer
