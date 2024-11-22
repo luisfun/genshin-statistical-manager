@@ -23,7 +23,7 @@ export const statisticsPlayer = async (db: D1Database) => {
   const fsArr: number[] = [] // 好感度最大数
   const tfArr: number[] = [] // 螺旋n階
   const taArr: number[] = [] // 幻想シアター階層
-  const playerInfoData = (await db.prepare('SELECT data FROM player').raw<[string]>()).map(
+  const playerInfoData = (await db.prepare('SELECT data FROM _player').raw<[string]>()).map(
     e => JSON.parse(e[0]) as PlayerInfo,
   )
   // カウント

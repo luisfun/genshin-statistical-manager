@@ -4,7 +4,7 @@ export const d1Limiter = async (db: D1Database, player: number, num: number, day
   // playerの最大数のupdated_atを取得、なければ全体のlimit_at
   const player_limit_at =
     (await db
-      .prepare('SELECT updated_at FROM player ORDER BY updated_at DESC LIMIT ?, 1')
+      .prepare('SELECT updated_at FROM _player ORDER BY updated_at DESC LIMIT ?, 1')
       .bind(player)
       .first<number>('updated_at')) || limit_at
   // avatarのテーブルリスト取得（IDの取得）
@@ -30,7 +30,7 @@ export const d1Limiter = async (db: D1Database, player: number, num: number, day
   await db.batch([
     // 古いplayerの削除
     db
-      .prepare('DELETE FROM player WHERE updated_at <= ?')
+      .prepare('DELETE FROM _player WHERE updated_at <= ?')
       .bind(player_limit_at),
     // 古いavatarの削除
     ...avatar_ids
