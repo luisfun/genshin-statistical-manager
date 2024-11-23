@@ -1,12 +1,6 @@
 export const d1Limiter = async (db: D1Database, player: number, num: number, day: number) => {
   const now_at = Date.now()
   const limit_at = now_at - day * 24 * 60 * 60 * 1000
-  // playerの最大数のupdated_atを取得、なければ全体のlimit_at
-  const player_limit_at =
-    (await db
-      .prepare('SELECT updated_at FROM _player ORDER BY updated_at DESC LIMIT ?, 1')
-      .bind(player)
-      .first<number>('updated_at')) || limit_at
   // avatarのテーブルリスト取得（IDの取得）
   const avatar_ids = (await db.prepare('SELECT name FROM sqlite_master WHERE type="table"').raw<[string]>())
     .map(e => e[0])
@@ -30,8 +24,8 @@ export const d1Limiter = async (db: D1Database, player: number, num: number, day
   await db.batch([
     // 古いplayerの削除
     db
-      .prepare('DELETE FROM _player WHERE updated_at <= ?')
-      .bind(player_limit_at),
+      .prepare(deleteQuery('_player'))
+      .bind(player, limit_at),
     // 古いavatarの削除
     ...avatar_ids
       .filter((_, i) => avatar_updated_at[i] && avatar_limit_at[i] < avatar_updated_at[i])
@@ -57,3 +51,21 @@ const calcTime = (
   //const cy = p1.y+(p3.y-p1.y)*s1/(s1+s2)
   return cx
 }
+
+const deleteQuery = (table: string) => `
+DELETE FROM ${table}
+WHERE uid IN (
+  SELECT uid FROM ${table}
+  WHERE (
+    (SELECT COUNT(*) FROM ${table}) > ?1
+    AND uid NOT IN (
+      SELECT uid FROM ${table}
+      ORDER BY updated_at DESC
+      LIMIT ?1
+    )
+  ) OR (
+    (SELECT COUNT(*) FROM ${table}) <= ?1
+    AND updated_at < ?2
+  )
+)
+`
