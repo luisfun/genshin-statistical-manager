@@ -1,5 +1,5 @@
 import { d1Limiter } from './d1-limiter'
-import { statisticsAvatar, statisticsPlayer } from './statistics'
+import { statisticsAvatar, statisticsPlayer, consolidate } from './statistics'
 
 export default {
   async fetch(request, env, ctx) {
@@ -8,6 +8,7 @@ export default {
       await d1Limiter(env.db, env.PLAYER_LIMIT, env.CHARACTER_LIMIT, env.DAY_LIMIT)
       await statisticsPlayer(env.db)
       await statisticsAvatar(env.db)
+      await consolidate(env.db)
     }
     */
     return new Response('Hello World!')
@@ -17,6 +18,7 @@ export default {
       case '0 */8 * * *':
         await d1Limiter(env.db, env.PLAYER_LIMIT, env.CHARACTER_LIMIT, env.DAY_LIMIT)
         await statisticsPlayer(env.db)
+        await consolidate(env.db)
         break
       case '0 1-7,9-15,17-23 * * *':
         await statisticsAvatar(env.db)

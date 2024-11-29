@@ -1,7 +1,7 @@
 import type { AvatarInfo, PlayerInfo, Statistics, StatisticsAvatar, StatisticsPlayer, Weapon } from './types'
 import { mean, mean2, median, median2, mode2 } from './utils'
 
-const AVATAR_STAT_LIMIT = 1 // 10
+const AVATAR_STAT_LIMIT = 10
 const AVATAR_NUM_LIMIT = 5
 const AVATAR_PROCESS_LIMIT = 10
 
@@ -234,7 +234,9 @@ export const statisticsAvatar = async (db: D1Database) => {
     // save
     await setStat(db, avatarInfo.avatarId, Date.now(), JSON.stringify(avatarInfo))
   }
+}
 
+export const consolidate = async (db: D1Database) => {
   // 統計データをまとめる
   const statData = await db.prepare(`SELECT uid, data FROM ${TABLE} ORDER BY uid ASC`).raw<[number, string]>()
   const playerInfoRaw = statData.find(e => e[0] === PLAYER_UID)?.[1]
@@ -243,6 +245,7 @@ export const statisticsAvatar = async (db: D1Database) => {
   const avatarInfoList = statData.filter(e => 1000 < e[0]).map(e => JSON.parse(e[1]) as StatisticsAvatar)
   const timestamp = Date.now()
   const stats: Statistics = { playerInfo, avatarInfoList, timestamp }
+  
   // save
   await setStat(db, COMP_UID, timestamp, JSON.stringify(stats))
 }
