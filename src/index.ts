@@ -1,5 +1,5 @@
 import { d1Limiter } from './d1-limiter'
-import { statisticsAvatar, statisticsPlayer, consolidate } from './statistics'
+import { consolidate, statisticsAvatar, statisticsPlayer } from './statistics'
 
 export default {
   async fetch(request, env, ctx) {

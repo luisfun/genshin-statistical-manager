@@ -245,7 +245,7 @@ export const consolidate = async (db: D1Database) => {
   const avatarInfoList = statData.filter(e => 1000 < e[0]).map(e => JSON.parse(e[1]) as StatisticsAvatar)
   const timestamp = Date.now()
   const stats: Statistics = { playerInfo, avatarInfoList, timestamp }
-  
+
   // save
   await setStat(db, COMP_UID, timestamp, JSON.stringify(stats))
 }

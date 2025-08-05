@@ -28,7 +28,7 @@ export const d1Limiter = async (db: D1Database, player: number, num: number, day
       .bind(player, limit_at),
     // 古いavatarの削除
     ...avatar_ids
-      .filter((_, i) => avatar_updated_at[i] && avatar_limit_at[i] < avatar_updated_at[i])
+      //.filter((_, i) => avatar_updated_at[i] && avatar_limit_at[i] < avatar_updated_at[i]) 順番の不整合を生む
       .map((e, i) => db.prepare(`DELETE FROM ${e} WHERE updated_at < ?`).bind(avatar_limit_at[i])),
   ])
 }
