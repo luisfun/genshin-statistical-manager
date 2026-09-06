@@ -3,7 +3,7 @@ import { mean, mean2, median, median2, mode2 } from './utils'
 
 const AVATAR_STAT_LIMIT = 10
 const AVATAR_NUM_LIMIT = 5
-const AVATAR_PROCESS_LIMIT = 10
+const AVATAR_PROCESS_LIMIT = 5
 
 const TABLE = 'statistics'
 const PLAYER_UID = 10
