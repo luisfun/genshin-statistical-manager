@@ -18,7 +18,7 @@ mode = "smart"
 # https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 [vars]
 PLAYER_LIMIT = 40000 # 39682 -> 50MB
-CHARACTER_LIMIT = 12000 #11000 -> 50MB
+CHARACTER_LIMIT = 11000 # 50MB
 DAY_LIMIT = 365 #100
 
 # https://developers.cloudflare.com/workers/wrangler/configuration/#d1-databases
