@@ -89,6 +89,7 @@ export const statisticsAvatar = async (db: D1Database) => {
 
   // 実際の処理
   for (const id of avatarIds) {
+    // console.log(`Processing avatar table: ${id}`)
     const avatarInfoData = (await db.prepare(`SELECT data FROM ${id}`).raw<[string]>()).map(
       e => JSON.parse(e[0]) as AvatarInfo,
     )

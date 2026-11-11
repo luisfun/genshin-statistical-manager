@@ -4,10 +4,16 @@ import { consolidate, statisticsAvatar, statisticsPlayer } from './statistics'
 export default {
   async fetch(request, env, ctx) {
     /*
-    if (new URL(request.url).pathname === '/') {
+    if (new URL(request.url).pathname === '/d1-limiter') {
       await d1Limiter(env.db, env.PLAYER_LIMIT, env.CHARACTER_LIMIT, env.DAY_LIMIT)
+    }
+    if (new URL(request.url).pathname === '/update-player') {
       await statisticsPlayer(env.db)
+    }
+    if (new URL(request.url).pathname === '/update-avatar') {
       await statisticsAvatar(env.db)
+    }
+    if (new URL(request.url).pathname === '/consolidate') {
       await consolidate(env.db)
     }
     */
